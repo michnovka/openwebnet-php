@@ -10,6 +10,8 @@ class OpenWebNetException extends Exception{
 	public const CODE_WRONG_REPLY = 2;
 	public const CODE_AUTHENTICATION_ERROR = 3;
 	public const CODE_NO_REPLY = 4;
+	public const CODE_TIME_NOT_SUPPORTED = 5;
+	public const CODE_DIMMER_LEVEL_NOT_SUPPORTED = 6;
 
 	public function __construct($message = "", $code = 0, Throwable $previous = null)
 	{
@@ -56,6 +58,24 @@ class OpenWebNet{
 	 */
 	protected function IsConnected(){
 		return $this->socket ? true : false;
+	}
+
+	/**
+	 * Close socket
+	 */
+	public function __destruct()
+	{
+		$this->Disconnect();
+	}
+
+	/**
+	 * Closes socket
+	 */
+	protected function Disconnect(){
+		if($this->IsConnected()){
+			OpenWebNetDebugging::LogTime("Closing connection to ".$this->ip.":".$this->port, OpenWebNetDebuggingLevel::NORMAL);
+			fclose($this->socket);
+		}
 	}
 
 	/**
@@ -129,10 +149,11 @@ class OpenWebNet{
 	/**
 	 * @param $message
 	 * @param int $buffer
+	 * @param bool $read_final_ack
 	 * @return false|string
 	 * @throws OpenWebNetException
 	 */
-	protected function SendRaw($message, $buffer = 1024){
+	protected function SendRaw($message, $buffer = 1024, $read_final_ack = false){
 
 		$this->Connect();
 
@@ -148,23 +169,15 @@ class OpenWebNet{
 
 		OpenWebNetDebugging::LogTime("Received reply: ".$answer, OpenWebNetDebuggingLevel::VERBOSE);
 
+		if($read_final_ack){
+			$answer2 = fread($this->socket,7);
+			OpenWebNetDebugging::LogTime("Received final ACK: ".$answer2, OpenWebNetDebuggingLevel::VERBOSE);
+		}
+
 		return $answer;
 
 	}
 
-	public function Light($light_id, $status){
-
-		$status = $status ? '1' : '0';
-
-		$reply = $this->SendRaw('*1*'.$status.'*'.$light_id.'##');
-
-		if($reply == OpenWebNetConstants::ACK){
-			return true;
-		}else{
-			return false;
-		}
-
-	}
 
 
 }
