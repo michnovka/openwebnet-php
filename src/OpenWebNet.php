@@ -2,6 +2,8 @@
 
 require_once dirname(__FILE__).'/OpenWebNetConstants.php';
 require_once dirname(__FILE__) . '/OpenWebNetDebugging.php';
+require_once dirname(__FILE__) . '/OpenWebNetLight.php';
+require_once dirname(__FILE__) . '/OpenWebNetAutomation.php';
 require_once dirname(__FILE__).'/libs/OPENHash.php';
 
 class OpenWebNetException extends Exception{
@@ -36,6 +38,15 @@ class OpenWebNet{
 	/** @var null|resource $socket */
 	protected $socket = null;
 
+	/** @var int $debugging_level */
+	protected $debugging_level;
+
+	/** @var OpenWebNetLight|null */
+	private ?OpenWebNetLight $module_instance_light;
+
+	/** @var OpenWebNetAutomation|null */
+	private ?OpenWebNetAutomation $module_instance_automation;
+
 	/**
 	 * OpenWebNet constructor.
 	 * @param string $ip
@@ -49,6 +60,7 @@ class OpenWebNet{
 		$this->ip = $ip;
 		$this->port = $port;
 		$this->password = $password;
+		$this->debugging_level = $debugging_level;
 
 		OpenWebNetDebugging::SetDebuggingLevel($debugging_level);
 	}
@@ -65,7 +77,7 @@ class OpenWebNet{
 	 */
 	public function __destruct()
 	{
-		$this->Disconnect();
+		//$this->Disconnect();
 	}
 
 	/**
@@ -170,12 +182,57 @@ class OpenWebNet{
 		OpenWebNetDebugging::LogTime("Received reply: ".$answer, OpenWebNetDebuggingLevel::VERBOSE);
 
 		if($read_final_ack){
-			$answer2 = fread($this->socket,7);
+
+			$answer2 = null;
+
+			if(!preg_match('/^(.*)\*#\*1##$/i', $answer, $m)) {
+				$answer2 = fread($this->socket, 7);
+			}else{
+				$answer = $m[1];
+				$answer2 = OpenWebNetConstants::ACK;
+			}
+
 			OpenWebNetDebugging::LogTime("Received final ACK: ".$answer2, OpenWebNetDebuggingLevel::VERBOSE);
 		}
 
 		return $answer;
 
+	}
+
+	/**
+	 * @param resource $socket
+	 */
+	public function SetSocket($socket){
+		$this->socket = $socket;
+	}
+
+	/**
+	 * @return OpenWebNetLight|null
+	 * @throws OpenWebNetException
+	 */
+	public function GetLightInstance(){
+		if(empty($this->module_instance_light)){
+			$this->Connect();
+			$this->module_instance_light = new OpenWebNetLight($this->ip, $this->port, $this->password, $this->debugging_level);
+			$this->module_instance_light->SetSocket($this->socket);
+		}
+
+		return $this->module_instance_light;
+	}
+
+
+	/**
+	 * @return OpenWebNetAutomation|null
+	 * @throws OpenWebNetException
+	 */
+	public function GetAutomationInstance(){
+		if(empty($this->module_instance_automation)){
+			$this->Connect();
+			$this->module_instance_automation = new OpenWebNetAutomation($this->ip, $this->port, $this->password, $this->debugging_level);
+			$this->module_instance_automation->SetSocket($this->socket);
+		}
+
+		return $this->module_instance_automation;
 	}
 
 
