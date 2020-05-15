@@ -39,7 +39,7 @@ class OpenWebNetAutomation extends OpenWebNet{
 
 			return $results;
 		}else{
-			if(preg_match('/^\*2\*([0-9]+)\*'.$automation_id.'##$/i', $reply, $m)){
+			if(preg_match('/^\*2\*([0-9]+)\*'.$automation_id.'##/i', $reply, $m)){
 				return $m[1];
 			}else{
 				return null;
