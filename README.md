@@ -10,4 +10,5 @@ This library aims to wrap basic OPENWebNet functionality for Bticino products in
 - Automation (Basic actuator)
 
 ## Known limitations (to be implemented)
-- Area controlling
+- Automation only works with basic actuator
+- No temperature support
