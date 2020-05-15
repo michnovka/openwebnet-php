@@ -23,10 +23,27 @@ class OpenWebNetAutomation extends OpenWebNet{
 
 		$reply = $this->SendRaw('*#2*'.$automation_id.'##', 1024, true);
 
-		if(preg_match('/^\*2\*([0-9]+)\*'.$automation_id.'##$/i', $reply, $m)){
-			return $m[1];
+		if(OpenWebNetLocations::IsArea($automation_id)){
+
+			$results = array();
+			$replies = explode('##',$reply);
+
+			foreach($replies as $r){
+				if($r == '*#*1')
+					break;
+
+				if(preg_match('/^\*2\*([0-9]+)\*([0-9]+)$/i', $r, $m)){
+					$results[$m[2]] = $m[1];
+				}
+			}
+
+			return $results;
 		}else{
-			return null;
+			if(preg_match('/^\*2\*([0-9]+)\*'.$automation_id.'##$/i', $reply, $m)){
+				return $m[1];
+			}else{
+				return null;
+			}
 		}
 
 	}

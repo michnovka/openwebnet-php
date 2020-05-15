@@ -5,6 +5,7 @@ require_once dirname(__FILE__) . '/OpenWebNetDebugging.php';
 require_once dirname(__FILE__) . '/OpenWebNetLight.php';
 require_once dirname(__FILE__) . '/OpenWebNetAutomation.php';
 require_once dirname(__FILE__).'/libs/OPENHash.php';
+require_once dirname(__FILE__).'/libs/OpenWebNetLocations.php';
 
 class OpenWebNetException extends Exception{
 
@@ -103,15 +104,24 @@ class OpenWebNet{
 
 		OpenWebNetDebugging::LogTime("Connecting to ".$this->ip.":".$this->port, OpenWebNetDebuggingLevel::NORMAL);
 
-		$this->socket = fsockopen($this->ip, $this->port, $error_number, $error_message, 5);
+		//$this->socket = fsockopen($this->ip, $this->port, $error_number, $error_message, 5);
+
+		$this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+
+		//socket_set_nonblock($this->socket);
+
+		socket_connect($this->socket, $this->ip, $this->port);
 
 		OpenWebNetDebugging::LogTime("Connected", OpenWebNetDebuggingLevel::VERBOSE);
 
 		if(!$this->socket){
+			$error_number = socket_last_error($this->socket);
+			$error_message = socket_strerror($error_number);
+
 			throw new OpenWebNetException("Error connecting to server: [$error_number] - $error_message", OpenWebNetException::CODE_CANNOT_CONNECT);
 		}else{
 
-			$answer = fread($this->socket,7);
+			$answer = socket_read($this->socket,1024);
 
 			OpenWebNetDebugging::LogTime("Received reply: ".$answer, OpenWebNetDebuggingLevel::VERBOSE);
 
@@ -122,9 +132,9 @@ class OpenWebNet{
 
 				OpenWebNetDebugging::LogTime("Requesting authentication with ".$message, OpenWebNetDebuggingLevel::VERBOSE);
 
-				fwrite($this->socket, $message);
+				socket_write($this->socket, $message);
 
-				$answer = fread($this->socket, 128);
+				$answer = socket_read($this->socket, 128);
 
 				OpenWebNetDebugging::LogTime("Received reply: ".$answer, OpenWebNetDebuggingLevel::VERBOSE);
 
@@ -137,9 +147,9 @@ class OpenWebNet{
 
 				OpenWebNetDebugging::LogTime("Sending hash", OpenWebNetDebuggingLevel::VERBOSE);
 
-				fwrite($this->socket,'*#'.$hash.'##');
+				socket_write($this->socket,'*#'.$hash.'##');
 
-				$answer = fread($this->socket,7);
+				$answer = socket_read($this->socket,6);
 
 				OpenWebNetDebugging::LogTime("Received reply: ".$answer, OpenWebNetDebuggingLevel::VERBOSE);
 
@@ -161,35 +171,33 @@ class OpenWebNet{
 	/**
 	 * @param $message
 	 * @param int $buffer
-	 * @param bool $read_final_ack
+	 * @param bool $read_until_ack
 	 * @return false|string
 	 * @throws OpenWebNetException
 	 */
-	protected function SendRaw($message, $buffer = 1024, $read_final_ack = false){
+	protected function SendRaw($message, $buffer = 1024, $read_until_ack = false){
 
 		$this->Connect();
 
 		OpenWebNetDebugging::LogTime("Sending message: ".$message, OpenWebNetDebuggingLevel::VERBOSE);
 
-		fwrite($this->socket, $message);
+		socket_write($this->socket, $message);
 
-		$answer = fread($this->socket,$buffer);
+		$answer = socket_read($this->socket,$buffer);
 
-		if($answer === false){
+		if(!$answer){
 			throw new OpenWebNetException("No reply from server", OpenWebNetException::CODE_NO_REPLY);
 		}
 
 		OpenWebNetDebugging::LogTime("Received reply: ".$answer, OpenWebNetDebuggingLevel::VERBOSE);
 
-		if($read_final_ack){
+		if($read_until_ack){
+			while(!preg_match('/^(.*)\*#\*1##$/i', $answer, $m)) {
+				OpenWebNetDebugging::LogTime("No ACK received, reading again.", OpenWebNetDebuggingLevel::VERBOSE);
+				$answer2 = socket_read($this->socket,1024);
+				OpenWebNetDebugging::LogTime("Received reply: ".$answer2, OpenWebNetDebuggingLevel::VERBOSE);
 
-			$answer2 = null;
-
-			if(!preg_match('/^(.*)\*#\*1##$/i', $answer, $m)) {
-				$answer2 = fread($this->socket, 7);
-			}else{
-				$answer = $m[1];
-				$answer2 = OpenWebNetConstants::ACK;
+				$answer .= $answer2;
 			}
 
 			OpenWebNetDebugging::LogTime("Received final ACK: ".$answer2, OpenWebNetDebuggingLevel::VERBOSE);
