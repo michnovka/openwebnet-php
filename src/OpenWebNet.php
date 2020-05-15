@@ -244,5 +244,30 @@ class OpenWebNet{
 	}
 
 
+	protected function ParseStatusReply($address, $who, $reply){
+
+		if(OpenWebNetLocations::IsArea($address)){
+
+			$results = array();
+			$replies = explode('##',$reply);
+
+			foreach($replies as $r){
+				if($r == '*#*1')
+					break;
+
+				if(preg_match('/^\*'.$who.'\*([0-9]+)\*([0-9]+)$/i', $r, $m)){
+					$results[$m[2]] = $m[1];
+				}
+			}
+
+			return $results;
+		}else{
+			if(preg_match('/^\*'.$who.'\*([0-9]+)\*'.$address.'##/i', $reply, $m)){
+				return $m[1];
+			}else{
+				return null;
+			}
+		}
+	}
 
 }

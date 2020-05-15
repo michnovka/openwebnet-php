@@ -6,14 +6,16 @@ $own = new OpenWebNetLight('192.168.1.40', 20000, '12345', OpenWebNetDebuggingLe
 
 $own_light = $own->GetLightInstance();
 
-// Turn light off
-$own_light->SetLight('12', 0);
-// 0
-var_dump($own_light->GetLightStatus('12'));
+// Turn light 1.2 ON
+$own_light->SetLight(OpenWebNetLocations::Address(1, 2), 0);
 
-// Turn ON for 1 minute
-$own_light->SetLightTimedON('31', 60);
-// 1
+// 0
+var_dump($own_light->GetLightStatus(OpenWebNetLocations::Address(1, 2)));
+
+// Turn ON all lights in area 3 for 1 minute
+$own_light->SetLightTimedON(OpenWebNetLocations::Address(3, null), 60);
+
+// Array of statuses
 var_dump($own_light->GetLightStatus('31'));
 
 

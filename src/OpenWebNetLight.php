@@ -23,11 +23,7 @@ class OpenWebNetLight extends OpenWebNet{
 
 		$reply = $this->SendRaw('*#1*'.$light_id.'##', 1024, true);
 
-		if(preg_match('/^\*1\*([0-9]+)\*'.$light_id.'##$/i', $reply, $m)){
-			return $m[1];
-		}else{
-			return null;
-		}
+		return $this->ParseStatusReply($light_id, 1, $reply);
 
 	}
 

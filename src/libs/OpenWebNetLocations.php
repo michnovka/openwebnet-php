@@ -3,11 +3,17 @@
 class OpenWebNetLocations{
 
 	/**
+	 * Return OWN Address format based on area and point. If point is null/false then returns whole are address.
+	 *
 	 * @param int $area
-	 * @param int $point
+	 * @param int|null|false $point
 	 * @return string
 	 */
 	public static function Address($area, $point){
+
+		if($point === null || $point === false)
+			return $area;
+
 		if($point >= 10 || $area >= 10){
 			$area = str_pad($area, 2, '0', STR_PAD_LEFT);
 			$point = str_pad($point, 2, '0', STR_PAD_LEFT);
