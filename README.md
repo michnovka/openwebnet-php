@@ -8,7 +8,9 @@ This library aims to wrap basic OPENWebNet functionality for Bticino products in
 ## Supported Features
 - Lights
 - Automation (Basic actuator)
+- Scenarios (Virtual button press)
 
 ## Known limitations (to be implemented)
 - Automation only works with basic actuator
 - No temperature support
+- no more advanced Virtual button press types (short press, extended press, etc.)
