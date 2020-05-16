@@ -3,6 +3,13 @@
 class OpenWebNetLocations{
 
 	/**
+	 * @return string
+	 */
+	public static function All(){
+		return '0';
+	}
+
+	/**
 	 * Return OWN Address format based on area and point. If point is null/false then returns whole are address.
 	 *
 	 * @param int $area

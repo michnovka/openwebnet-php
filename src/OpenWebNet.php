@@ -4,6 +4,7 @@ require_once dirname(__FILE__).'/OpenWebNetConstants.php';
 require_once dirname(__FILE__) . '/OpenWebNetDebugging.php';
 require_once dirname(__FILE__) . '/OpenWebNetLight.php';
 require_once dirname(__FILE__) . '/OpenWebNetAutomation.php';
+require_once dirname(__FILE__) . '/OpenWebNetScenario.php';
 require_once dirname(__FILE__).'/libs/OPENHash.php';
 require_once dirname(__FILE__).'/libs/OpenWebNetLocations.php';
 
@@ -28,7 +29,7 @@ class OpenWebNetException extends Exception{
 class OpenWebNet{
 
 	/** @var string $ip */
-	protected $ip;
+	protected string $ip;
 
 	/** @var int $port */
 	protected $port;
@@ -40,13 +41,16 @@ class OpenWebNet{
 	protected $socket = null;
 
 	/** @var int $debugging_level */
-	protected $debugging_level;
+	protected int $debugging_level;
 
 	/** @var OpenWebNetLight|null */
 	private ?OpenWebNetLight $module_instance_light;
 
 	/** @var OpenWebNetAutomation|null */
 	private ?OpenWebNetAutomation $module_instance_automation;
+
+	/** @var OpenWebNetScenario|null */
+	private ?OpenWebNetScenario $module_instance_scenario;
 
 	/**
 	 * OpenWebNet constructor.
@@ -241,6 +245,21 @@ class OpenWebNet{
 		}
 
 		return $this->module_instance_automation;
+	}
+
+
+	/**
+	 * @return OpenWebNetScenario|null
+	 * @throws OpenWebNetException
+	 */
+	public function GetScenarioInstance(){
+		if(empty($this->module_instance_scenario)){
+			$this->Connect();
+			$this->module_instance_scenario = new OpenWebNetScenario($this->ip, $this->port, $this->password, $this->debugging_level);
+			$this->module_instance_scenario->SetSocket($this->socket);
+		}
+
+		return $this->module_instance_scenario;
 	}
 
 
