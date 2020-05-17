@@ -5,6 +5,7 @@ require_once dirname(__FILE__) . '/OpenWebNetDebugging.php';
 require_once dirname(__FILE__) . '/OpenWebNetLight.php';
 require_once dirname(__FILE__) . '/OpenWebNetAutomation.php';
 require_once dirname(__FILE__) . '/OpenWebNetScenario.php';
+require_once dirname(__FILE__) . '/OpenWebNetTemperature.php';
 require_once dirname(__FILE__).'/libs/OPENHash.php';
 require_once dirname(__FILE__).'/libs/OpenWebNetLocations.php';
 
@@ -51,6 +52,9 @@ class OpenWebNet{
 
 	/** @var OpenWebNetScenario|null */
 	private ?OpenWebNetScenario $module_instance_scenario;
+
+	/** @var OpenWebNetTemperature|null */
+	private ?OpenWebNetTemperature $module_instance_temperature;
 
 	/**
 	 * OpenWebNet constructor.
@@ -260,6 +264,20 @@ class OpenWebNet{
 		}
 
 		return $this->module_instance_scenario;
+	}
+
+	/**
+	 * @return OpenWebNetTemperature|null
+	 * @throws OpenWebNetException
+	 */
+	public function GetTemperatureInstance(){
+		if(empty($this->module_instance_temperature)){
+			$this->Connect();
+			$this->module_instance_temperature = new OpenWebNetTemperature($this->ip, $this->port, $this->password, $this->debugging_level);
+			$this->module_instance_temperature->SetSocket($this->socket);
+		}
+
+		return $this->module_instance_temperature;
 	}
 
 
