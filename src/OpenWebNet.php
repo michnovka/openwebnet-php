@@ -30,7 +30,7 @@ class OpenWebNetException extends Exception{
 class OpenWebNet{
 
 	/** @var string $ip */
-	protected string $ip;
+	protected $ip;
 
 	/** @var int $port */
 	protected $port;
@@ -42,19 +42,19 @@ class OpenWebNet{
 	protected $socket = null;
 
 	/** @var int $debugging_level */
-	protected int $debugging_level;
+	protected $debugging_level;
 
 	/** @var OpenWebNetLight|null */
-	private ?OpenWebNetLight $module_instance_light;
+	private $module_instance_light;
 
 	/** @var OpenWebNetAutomation|null */
-	private ?OpenWebNetAutomation $module_instance_automation;
+	private $module_instance_automation;
 
 	/** @var OpenWebNetScenario|null */
-	private ?OpenWebNetScenario $module_instance_scenario;
+	private $module_instance_scenario;
 
 	/** @var OpenWebNetTemperature|null */
-	private ?OpenWebNetTemperature $module_instance_temperature;
+	private $module_instance_temperature;
 
 	/**
 	 * OpenWebNet constructor.

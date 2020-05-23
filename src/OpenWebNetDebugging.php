@@ -2,7 +2,7 @@
 
 class OpenWebNetDebugging{
 
-	protected static int $current_debugging_level = OpenWebNetDebuggingLevel::NONE;
+	protected static $current_debugging_level = OpenWebNetDebuggingLevel::NONE;
 
 	/** @var null|string $output Null for console or file path for logging into files */
 	protected static $output = null;
