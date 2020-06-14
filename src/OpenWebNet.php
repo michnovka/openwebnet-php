@@ -6,6 +6,7 @@ require_once dirname(__FILE__) . '/OpenWebNetLight.php';
 require_once dirname(__FILE__) . '/OpenWebNetAutomation.php';
 require_once dirname(__FILE__) . '/OpenWebNetScenario.php';
 require_once dirname(__FILE__) . '/OpenWebNetTemperature.php';
+require_once dirname(__FILE__) . '/OpenWebNetDoorLock.php';
 require_once dirname(__FILE__).'/libs/OPENHash.php';
 require_once dirname(__FILE__).'/libs/OpenWebNetLocations.php';
 
@@ -49,6 +50,9 @@ class OpenWebNet{
 
 	/** @var OpenWebNetAutomation|null */
 	private $module_instance_automation;
+
+	/** @var OpenWebNetDoorLock|null */
+	private $module_instance_door_lock;
 
 	/** @var OpenWebNetScenario|null */
 	private $module_instance_scenario;
@@ -278,6 +282,20 @@ class OpenWebNet{
 		}
 
 		return $this->module_instance_temperature;
+	}
+
+	/**
+	 * @return OpenWebNetDoorLock|null
+	 * @throws OpenWebNetException
+	 */
+	public function GetDoorLockInstance(){
+		if(empty($this->module_instance_door_lock)){
+			$this->Connect();
+			$this->module_instance_door_lock = new OpenWebNetDoorLock($this->ip, $this->port, $this->password, $this->debugging_level);
+			$this->module_instance_door_lock->SetSocket($this->socket);
+		}
+
+		return $this->module_instance_door_lock;
 	}
 
 

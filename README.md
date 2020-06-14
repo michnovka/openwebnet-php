@@ -2,11 +2,12 @@
 This library aims to wrap basic OPENWebNet functionality for Bticino products in PHP
 
 ## Requirements
-- PHP 7.4+
+- PHP 7.3+
 - OPEN Gateway (tested with MH202, but any such as F454 or F420 should work)
 
 ## Supported Features
 - Lights
+- Door lock (open doors only)
 - Automation (Basic actuator)
 - Scenarios (Virtual button press)
 
