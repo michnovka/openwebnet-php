@@ -2,7 +2,8 @@
 This library aims to wrap basic OPENWebNet functionality for Bticino products in PHP
 
 ## Requirements
-- PHP 7.3+
+- PHP 8.2+
+- SOCKET extension
 - OPEN Gateway (tested with MH202, but any such as F454 or F420 should work)
 
 ## Supported Features
