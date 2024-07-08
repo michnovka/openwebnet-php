@@ -129,20 +129,20 @@ class OpenWebNet
     }
 
     /**
-     */
-    protected function isConnected(): bool
-    {
-        return (bool) $this->socket;
-    }
-
-    /**
      * Closes socket
      */
-    protected function disconnect(): void
+    public function disconnect(): void
     {
         OpenWebNetDebugging::logTime("Closing connection to " . $this->ip . ":" . $this->port, OpenWebNetDebuggingLevel::NORMAL);
         socket_close($this->socket);
         unset($this->socket);
+    }
+
+    /**
+     */
+    protected function isConnected(): bool
+    {
+        return (bool) $this->socket;
     }
 
     /**
