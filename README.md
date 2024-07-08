@@ -1,3 +1,5 @@
+# ATTENTION! This is legacy repository that provides only source code without composer packaging and namespaces. Use master branch for most up to date version
+
 # openwebnet-php
 This library aims to wrap basic OPENWebNet functionality for Bticino products in PHP
 
