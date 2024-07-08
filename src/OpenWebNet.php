@@ -1,328 +1,294 @@
 <?php
 
-require_once dirname(__FILE__).'/OpenWebNetConstants.php';
-require_once dirname(__FILE__) . '/OpenWebNetDebugging.php';
-require_once dirname(__FILE__) . '/OpenWebNetLight.php';
-require_once dirname(__FILE__) . '/OpenWebNetAutomation.php';
-require_once dirname(__FILE__) . '/OpenWebNetScenario.php';
-require_once dirname(__FILE__) . '/OpenWebNetTemperature.php';
-require_once dirname(__FILE__) . '/OpenWebNetDoorLock.php';
-require_once dirname(__FILE__).'/libs/OPENHash.php';
-require_once dirname(__FILE__).'/libs/OpenWebNetLocations.php';
-
-class OpenWebNetException extends Exception{
-
-	public const CODE_CANNOT_CONNECT = 1;
-	public const CODE_WRONG_REPLY = 2;
-	public const CODE_AUTHENTICATION_ERROR = 3;
-	public const CODE_NO_REPLY = 4;
-	public const CODE_TIME_NOT_SUPPORTED = 5;
-	public const CODE_DIMMER_LEVEL_NOT_SUPPORTED = 6;
-
-	public function __construct($message = "", $code = 0, Throwable $previous = null)
-	{
-		parent::__construct($message, $code, $previous);
-
-		OpenWebNetDebugging::LogTime("Exception thrown: [$code] - $message", OpenWebNetDebuggingLevel::NORMAL);
-	}
-}
-
-
-class OpenWebNet{
-
-	/** @var string $ip */
-	protected $ip;
-
-	/** @var int $port */
-	protected $port;
+declare(strict_types=1);
 
-	/** @var string $password */
-	protected $password;
+namespace Michnovka\OpenWebNet;
 
-	/** @var null|resource $socket */
-	protected $socket = null;
+use Socket;
 
-	/** @var int $debugging_level */
-	protected $debugging_level;
+class OpenWebNet
+{
+    protected string $ip;
 
-	/** @var OpenWebNetLight|null */
-	private $module_instance_light;
+    protected int $port;
 
-	/** @var OpenWebNetAutomation|null */
-	private $module_instance_automation;
+    protected string $password;
 
-	/** @var OpenWebNetDoorLock|null */
-	private $module_instance_door_lock;
+    protected Socket $socket;
 
-	/** @var OpenWebNetScenario|null */
-	private $module_instance_scenario;
+    protected OpenWebNetDebuggingLevel $debuggingLevel;
 
-	/** @var OpenWebNetTemperature|null */
-	private $module_instance_temperature;
+    private ?OpenWebNetLight $module_instance_light;
 
-	/**
-	 * OpenWebNet constructor.
-	 * @param string $ip
-	 * @param int $port
-	 * @param string $password
-	 * @param int $debugging_level
-	 */
-	public function __construct($ip, $port = 20000, $password = '12345', $debugging_level = OpenWebNetDebuggingLevel::NONE)
-	{
+    private ?OpenWebNetAutomation $module_instance_automation;
 
-		$this->ip = $ip;
-		$this->port = $port;
-		$this->password = $password;
-		$this->debugging_level = $debugging_level;
+    private ?OpenWebNetDoorLock $module_instance_door_lock;
 
-		OpenWebNetDebugging::SetDebuggingLevel($debugging_level);
-	}
+    private ?OpenWebNetScenario $module_instance_scenario;
 
-	/**
-	 * @return bool
-	 */
-	protected function IsConnected(){
-		return $this->socket ? true : false;
-	}
+    private ?OpenWebNetTemperature $module_instance_temperature;
 
-	/**
-	 * Close socket
-	 */
-	public function __destruct()
-	{
-		//$this->Disconnect();
-	}
+    public function __construct(
+        string $ip,
+        int $port = 20000,
+        string $password = '12345',
+        OpenWebNetDebuggingLevel $debuggingLevel = OpenWebNetDebuggingLevel::NONE,
+    ) {
 
-	/**
-	 * Closes socket
-	 */
-	protected function Disconnect(){
-		if($this->IsConnected()){
-			OpenWebNetDebugging::LogTime("Closing connection to ".$this->ip.":".$this->port, OpenWebNetDebuggingLevel::NORMAL);
-			fclose($this->socket);
-		}
-	}
+        $this->ip = $ip;
+        $this->port = $port;
+        $this->password = $password;
+        $this->debuggingLevel = $debuggingLevel;
+
+        OpenWebNetDebugging::setDebuggingLevel($debuggingLevel);
+    }
+
+    public function setSocket(Socket $socket): void
+    {
+        $this->socket = $socket;
+    }
+
+    /**
+     * @throws OpenWebNetException
+     */
+    public function getLightInstance(): ?OpenWebNetLight
+    {
+        if (empty($this->module_instance_light)) {
+            $this->connect();
+            $this->module_instance_light = new OpenWebNetLight($this->ip, $this->port, $this->password, $this->debuggingLevel);
+            $this->module_instance_light->setSocket($this->socket);
+        }
+
+        return $this->module_instance_light;
+    }
+
+
+    /**
+     * @throws OpenWebNetException
+     */
+    public function getAutomationInstance(): ?OpenWebNetAutomation
+    {
+        if (empty($this->module_instance_automation)) {
+            $this->connect();
+                $this->module_instance_automation = new OpenWebNetAutomation($this->ip, $this->port, $this->password, $this->debuggingLevel);
+                $this->module_instance_automation->setSocket($this->socket);
+
+        }
+
+        return $this->module_instance_automation;
+    }
+
+
+    /**
+     * @throws OpenWebNetException
+     */
+    public function getScenarioInstance(): ?OpenWebNetScenario
+    {
+        if (empty($this->module_instance_scenario)) {
+            $this->connect();
+                $this->module_instance_scenario = new OpenWebNetScenario($this->ip, $this->port, $this->password, $this->debuggingLevel);
+                $this->module_instance_scenario->setSocket($this->socket);
+
+        }
+
+        return $this->module_instance_scenario;
+    }
+
+    /**
+     * @throws OpenWebNetException
+     */
+    public function getTemperatureInstance(): ?OpenWebNetTemperature
+    {
+        if (empty($this->module_instance_temperature)) {
+            $this->connect();
+                $this->module_instance_temperature = new OpenWebNetTemperature($this->ip, $this->port, $this->password, $this->debuggingLevel);
+                $this->module_instance_temperature->setSocket($this->socket);
 
-	/**
-	 * @return bool
-	 * @throws OpenWebNetException
-	 */
-	protected function Connect(){
-		if($this->IsConnected())
-			return true;
+        }
 
-		$error_number = null;
-		$error_message = null;
+        return $this->module_instance_temperature;
+    }
 
-		OpenWebNetDebugging::LogTime("Connecting to ".$this->ip.":".$this->port, OpenWebNetDebuggingLevel::NORMAL);
+    /**
+     * @throws OpenWebNetException
+     */
+    public function getDoorLockInstance(): ?OpenWebNetDoorLock
+    {
+        if (empty($this->module_instance_door_lock)) {
+            $this->connect();
+                $this->module_instance_door_lock = new OpenWebNetDoorLock($this->ip, $this->port, $this->password, $this->debuggingLevel);
+                $this->module_instance_door_lock->setSocket($this->socket);
 
-		//$this->socket = fsockopen($this->ip, $this->port, $error_number, $error_message, 5);
+        }
 
-		$this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+        return $this->module_instance_door_lock;
+    }
 
-		//socket_set_nonblock($this->socket);
+    /**
+     */
+    protected function isConnected(): bool
+    {
+        return (bool) $this->socket;
+    }
 
-		socket_connect($this->socket, $this->ip, $this->port);
+    /**
+     * Closes socket
+     */
+    protected function disconnect(): void
+    {
+        OpenWebNetDebugging::logTime("Closing connection to " . $this->ip . ":" . $this->port, OpenWebNetDebuggingLevel::NORMAL);
+        socket_close($this->socket);
+        unset($this->socket);
+    }
 
-		OpenWebNetDebugging::LogTime("Connected", OpenWebNetDebuggingLevel::VERBOSE);
+    /**
+     * Check if the socket is active
+     */
+    public function isSocketActive(): bool {
+        return isset($this->socket);
+    }
 
-		if(!$this->socket){
-			$error_number = socket_last_error($this->socket);
-			$error_message = socket_strerror($error_number);
+    /**
+     * @throws OpenWebNetException
+     */
+    protected function connect(): bool
+    {
+        if ($this->isSocketActive()) {
+            return true;
+        }
 
-			throw new OpenWebNetException("Error connecting to server: [$error_number] - $error_message", OpenWebNetException::CODE_CANNOT_CONNECT);
-		}else{
+        $errorNumber = null;
+        $errorMessage = null;
 
-			$answer = socket_read($this->socket,1024);
+        OpenWebNetDebugging::logTime("Connecting to " . $this->ip . ":" . $this->port, OpenWebNetDebuggingLevel::NORMAL);
 
-			OpenWebNetDebugging::LogTime("Received reply: ".$answer, OpenWebNetDebuggingLevel::VERBOSE);
+        $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 
-			if($answer == OpenWebNetConstants::ACK){
+        if ($socket === false) {
+            $errorNumber = socket_last_error();
+            $errorMessage = socket_strerror($errorNumber);
+            throw new OpenWebNetException("Error connecting to server: [$errorNumber] - $errorMessage", OpenWebNetException::CODE_CANNOT_CONNECT);
+        }else{
+            $this->socket = $socket;
+        }
 
-				// now authenticate
-				$message = OpenWebNetConstants::REQUEST_AUTH;
+        $connect_result = socket_connect($this->socket, $this->ip, $this->port);
 
-				OpenWebNetDebugging::LogTime("Requesting authentication with ".$message, OpenWebNetDebuggingLevel::VERBOSE);
+        OpenWebNetDebugging::logTime("Connected", OpenWebNetDebuggingLevel::VERBOSE);
 
-				socket_write($this->socket, $message);
+        if ($connect_result === false) {
+            $errorNumber = socket_last_error($this->socket);
+            $errorMessage = socket_strerror($errorNumber);
 
-				$answer = socket_read($this->socket, 128);
+            throw new OpenWebNetException("Error connecting to server: [$errorNumber] - $errorMessage", OpenWebNetException::CODE_CANNOT_CONNECT);
+        } else {
+            $answer = socket_read($this->socket, 1024);
 
-				OpenWebNetDebugging::LogTime("Received reply: ".$answer, OpenWebNetDebuggingLevel::VERBOSE);
+            OpenWebNetDebugging::logTime("Received reply: " . $answer, OpenWebNetDebuggingLevel::VERBOSE);
 
-				$nonce = str_ireplace(['#', '*'], '', $answer);
+            if ($answer == OpenWebNetConstants::ACK) {
+                // now authenticate
+                $message = OpenWebNetConstants::REQUEST_AUTH;
 
-				$hash = OPENHash::Calculate($this->password, $nonce);
+                OpenWebNetDebugging::logTime("Requesting authentication with " . $message, OpenWebNetDebuggingLevel::VERBOSE);
 
-				OpenWebNetDebugging::LogTime("Nonce: ".$nonce, OpenWebNetDebuggingLevel::VERBOSE);
-				OpenWebNetDebugging::LogTime("Hash: ".$hash, OpenWebNetDebuggingLevel::VERBOSE);
+                socket_write($this->socket, $message);
 
-				OpenWebNetDebugging::LogTime("Sending hash", OpenWebNetDebuggingLevel::VERBOSE);
+                $answer = socket_read($this->socket, 128);
 
-				socket_write($this->socket,'*#'.$hash.'##');
+                OpenWebNetDebugging::logTime("Received reply: " . $answer, OpenWebNetDebuggingLevel::VERBOSE);
 
-				$answer = socket_read($this->socket,6);
+                $nonce = str_ireplace(['#', '*'], '', $answer);
 
-				OpenWebNetDebugging::LogTime("Received reply: ".$answer, OpenWebNetDebuggingLevel::VERBOSE);
+                $hash = OPENHash::calculate($this->password, $nonce);
 
-				if($answer == OpenWebNetConstants::ACK){
-					OpenWebNetDebugging::LogTime("Authentication success", OpenWebNetDebuggingLevel::NORMAL);
+                OpenWebNetDebugging::logTime("Nonce: " . $nonce, OpenWebNetDebuggingLevel::VERBOSE);
+                OpenWebNetDebugging::logTime("Hash: " . $hash, OpenWebNetDebuggingLevel::VERBOSE);
 
-					return true;
-				}else{
-					throw new OpenWebNetException("Authentication error", OpenWebNetException::CODE_AUTHENTICATION_ERROR);
-				}
+                OpenWebNetDebugging::logTime("Sending hash", OpenWebNetDebuggingLevel::VERBOSE);
 
-			}else{
-				throw new OpenWebNetException("Did not receive ACK upon connecting to server", OpenWebNetException::CODE_WRONG_REPLY);
-			}
+                socket_write($this->socket, '*#' . $hash . '##');
 
-		}
-	}
+                $answer = socket_read($this->socket, 6);
 
-	/**
-	 * @param $message
-	 * @param int $buffer
-	 * @param bool $read_until_ack
-	 * @return false|string
-	 * @throws OpenWebNetException
-	 */
-	protected function SendRaw($message, $buffer = 1024, $read_until_ack = false){
+                OpenWebNetDebugging::logTime("Received reply: " . $answer, OpenWebNetDebuggingLevel::VERBOSE);
 
-		$this->Connect();
+                if ($answer == OpenWebNetConstants::ACK) {
+                    OpenWebNetDebugging::logTime("Authentication success", OpenWebNetDebuggingLevel::NORMAL);
 
-		OpenWebNetDebugging::LogTime("Sending message: ".$message, OpenWebNetDebuggingLevel::VERBOSE);
+                    return true;
+                } else {
+                    throw new OpenWebNetException("Authentication error", OpenWebNetException::CODE_AUTHENTICATION_ERROR);
+                }
+            } else {
+                throw new OpenWebNetException("Did not receive ACK upon connecting to server", OpenWebNetException::CODE_WRONG_REPLY);
+            }
+        }
+    }
 
-		socket_write($this->socket, $message);
+    /**
+     * @throws OpenWebNetException
+     */
+    protected function sendRaw(string $message, int $buffer = 1024, bool $readUntilACK = false): string
+    {
 
-		$answer = socket_read($this->socket,$buffer);
+        $this->connect();
 
-		if(!$answer){
-			throw new OpenWebNetException("No reply from server", OpenWebNetException::CODE_NO_REPLY);
-		}
+        OpenWebNetDebugging::logTime("Sending message: " . $message, OpenWebNetDebuggingLevel::VERBOSE);
 
-		OpenWebNetDebugging::LogTime("Received reply: ".$answer, OpenWebNetDebuggingLevel::VERBOSE);
+        socket_write($this->socket, $message);
 
-		if($read_until_ack){
-			while(!preg_match('/^(.*)\*#\*1##$/i', $answer, $m)) {
-				OpenWebNetDebugging::LogTime("No ACK received, reading again.", OpenWebNetDebuggingLevel::VERBOSE);
-				$answer2 = socket_read($this->socket,1024);
-				OpenWebNetDebugging::LogTime("Received reply: ".$answer2, OpenWebNetDebuggingLevel::VERBOSE);
+        $answer = socket_read($this->socket, $buffer);
 
-				$answer .= $answer2;
-			}
+        if (!$answer) {
+            throw new OpenWebNetException("No reply from server", OpenWebNetException::CODE_NO_REPLY);
+        }
 
-			OpenWebNetDebugging::LogTime("Received final ACK: ".$answer2, OpenWebNetDebuggingLevel::VERBOSE);
-		}
+        OpenWebNetDebugging::logTime("Received reply: " . $answer, OpenWebNetDebuggingLevel::VERBOSE);
 
-		return $answer;
+        if ($readUntilACK) {
+            while (!preg_match('/^(.*)\*#\*1##$/i', $answer, $m)) {
+                OpenWebNetDebugging::logTime("No ACK received, reading again.", OpenWebNetDebuggingLevel::VERBOSE);
+                $answer2 = socket_read($this->socket, 1024);
+                OpenWebNetDebugging::logTime("Received reply: " . $answer2, OpenWebNetDebuggingLevel::VERBOSE);
 
-	}
+                $answer .= $answer2;
+            }
 
-	/**
-	 * @param resource $socket
-	 */
-	public function SetSocket($socket){
-		$this->socket = $socket;
-	}
+            OpenWebNetDebugging::logTime("Received final ACK: " . $answer, OpenWebNetDebuggingLevel::VERBOSE);
+        }
 
-	/**
-	 * @return OpenWebNetLight|null
-	 * @throws OpenWebNetException
-	 */
-	public function GetLightInstance(){
-		if(empty($this->module_instance_light)){
-			$this->Connect();
-			$this->module_instance_light = new OpenWebNetLight($this->ip, $this->port, $this->password, $this->debugging_level);
-			$this->module_instance_light->SetSocket($this->socket);
-		}
+        return $answer;
+    }
 
-		return $this->module_instance_light;
-	}
 
+    /**
+     * @return array<int,int>|int|null
+     */
+    protected function parseStatusReply(string $address, int $who, string $reply): array|int|null
+    {
 
-	/**
-	 * @return OpenWebNetAutomation|null
-	 * @throws OpenWebNetException
-	 */
-	public function GetAutomationInstance(){
-		if(empty($this->module_instance_automation)){
-			$this->Connect();
-			$this->module_instance_automation = new OpenWebNetAutomation($this->ip, $this->port, $this->password, $this->debugging_level);
-			$this->module_instance_automation->SetSocket($this->socket);
-		}
+        if (OpenWebNetLocations::isArea($address)) {
+            $results = [];
+            $replies = explode('##', $reply);
 
-		return $this->module_instance_automation;
-	}
+            foreach ($replies as $r) {
+                if ($r == '*#*1') {
+                    break;
+                }
 
+                if (preg_match('/^\*' . $who . '\*([0-9]+)\*([0-9]+)$/i', $r, $m)) {
+                    $results[(int)$m[2]] = (int) $m[1];
+                }
+            }
 
-	/**
-	 * @return OpenWebNetScenario|null
-	 * @throws OpenWebNetException
-	 */
-	public function GetScenarioInstance(){
-		if(empty($this->module_instance_scenario)){
-			$this->Connect();
-			$this->module_instance_scenario = new OpenWebNetScenario($this->ip, $this->port, $this->password, $this->debugging_level);
-			$this->module_instance_scenario->SetSocket($this->socket);
-		}
-
-		return $this->module_instance_scenario;
-	}
-
-	/**
-	 * @return OpenWebNetTemperature|null
-	 * @throws OpenWebNetException
-	 */
-	public function GetTemperatureInstance(){
-		if(empty($this->module_instance_temperature)){
-			$this->Connect();
-			$this->module_instance_temperature = new OpenWebNetTemperature($this->ip, $this->port, $this->password, $this->debugging_level);
-			$this->module_instance_temperature->SetSocket($this->socket);
-		}
-
-		return $this->module_instance_temperature;
-	}
-
-	/**
-	 * @return OpenWebNetDoorLock|null
-	 * @throws OpenWebNetException
-	 */
-	public function GetDoorLockInstance(){
-		if(empty($this->module_instance_door_lock)){
-			$this->Connect();
-			$this->module_instance_door_lock = new OpenWebNetDoorLock($this->ip, $this->port, $this->password, $this->debugging_level);
-			$this->module_instance_door_lock->SetSocket($this->socket);
-		}
-
-		return $this->module_instance_door_lock;
-	}
-
-
-	protected function ParseStatusReply($address, $who, $reply){
-
-		if(OpenWebNetLocations::IsArea($address)){
-
-			$results = array();
-			$replies = explode('##',$reply);
-
-			foreach($replies as $r){
-				if($r == '*#*1')
-					break;
-
-				if(preg_match('/^\*'.$who.'\*([0-9]+)\*([0-9]+)$/i', $r, $m)){
-					$results[$m[2]] = $m[1];
-				}
-			}
-
-			return $results;
-		}else{
-			if(preg_match('/^\*'.$who.'\*([0-9]+)\*'.$address.'##/i', $reply, $m)){
-				return $m[1];
-			}else{
-				return null;
-			}
-		}
-	}
-
+            return $results;
+        } else {
+            if (preg_match('/^\*' . $who . '\*([0-9]+)\*' . $address . '##/i', $reply, $m)) {
+                return (int)$m[1];
+            } else {
+                return null;
+            }
+        }
+    }
 }

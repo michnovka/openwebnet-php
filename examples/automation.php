@@ -1,18 +1,21 @@
 <?php
 
-require_once dirname(__FILE__).'/../src/OpenWebNet.php';
+require dirname(__FILE__).'/../vendor/autoload.php';
 
-$own = new OpenWebNetLight('192.168.1.40', 20000, '12345', OpenWebNetDebuggingLevel::VERBOSE);
+use Michnovka\OpenWebNet\OpenWebNet;
+use Michnovka\OpenWebNet\OpenWebNetLocations;
+use Michnovka\OpenWebNet\OpenWebNetDebuggingLevel;
 
-$own_automation = $own->GetAutomationInstance();
+$own = new OpenWebNet('192.168.1.40', 20000, '12345', OpenWebNetDebuggingLevel::VERBOSE);
+
+$own_automation = $own->getAutomationInstance();
 
 // Check status of Shutters
-var_dump($own_automation->GetAutomationStatus(OpenWebNetLocations::Address(8,8)));
+var_dump($own_automation->getAutomationStatus(OpenWebNetLocations::address(8,8)));
 
 // Roll shutters 8.8 down
-$own_automation->SetBasicActuator(OpenWebNetLocations::Address(8,8), 2);
-
+$own_automation->setBasicActuator(OpenWebNetLocations::address(8,8), 2);
 
 // Roll ALL shutters up
-$own_automation->SetBasicActuator(OpenWebNetLocations::All(), 2);
+$own_automation->setBasicActuator(OpenWebNetLocations::all(), 2);
 

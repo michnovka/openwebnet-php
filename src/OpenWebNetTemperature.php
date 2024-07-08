@@ -1,41 +1,29 @@
 <?php
 
-require_once dirname(__FILE__).'/OpenWebNet.php';
+declare(strict_types=1);
 
-class OpenWebNetTemperature extends OpenWebNet{
+namespace Michnovka\OpenWebNet;
 
-	public function __construct($ip, $port = 20000, $password = '12345', $debugging_level = OpenWebNetDebuggingLevel::NONE)
-	{
-		parent::__construct($ip, $port, $password, $debugging_level);
-	}
+class OpenWebNetTemperature extends OpenWebNet
+{
+    /**
+     * @throws OpenWebNetException
+     */
+    public function getTemperature(int $zoneId): ?float
+    {
+        $reply = $this->sendRaw('*#4*' . $zoneId . '*0##', 1024, true);
 
-	public function __destruct()
-	{
-		parent::__destruct();
-	}
+        if (preg_match('/\*#4\*' . $zoneId . '\*0\*([0-9]+)##/i', $reply, $m)) {
+            return $this->OPENTempToFloat($m[1]);
+        } else {
+            return null;
+        }
+    }
 
-	/**
-	 * @param int $zone_id
-	 * @return float|null
-	 * @throws OpenWebNetException
-	 */
-	public function GetTemperature($zone_id){
-		$reply = $this->SendRaw('*#4*'.$zone_id.'*0##', 1024, true);
+    public function OPENTempToFloat(string $openTemp): float
+    {
+        $sign = substr($openTemp, 0, 1) == 0 ? 1 : (-1);
 
-		if(preg_match('/\*#4\*'.$zone_id.'\*0\*([0-9]+)##/i', $reply, $m)){
-			return $this->OPENTempToFloat($m[1]);
-		}else{
-			return null;
-		}
-	}
-
-	public function OPENTempToFloat($open_temp){
-		$sign = substr($open_temp, 0 , 1) == 0 ? 1 : (-1);
-
-		$temp = floatval(substr($open_temp, 1,3))/10 * $sign;
-
-		return $temp;
-	}
-
-
+        return floatval(substr($openTemp, 1, 3)) / 10 * $sign;
+    }
 }

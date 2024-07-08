@@ -1,56 +1,44 @@
 <?php
 
-require_once dirname(__FILE__).'/OpenWebNet.php';
+declare(strict_types=1);
 
-class OpenWebNetAutomation extends OpenWebNet{
+namespace Michnovka\OpenWebNet;
 
-	public function __construct($ip, $port = 20000, $password = '12345', $debugging_level = OpenWebNetDebuggingLevel::NONE)
-	{
-		parent::__construct($ip, $port, $password, $debugging_level);
-	}
+class OpenWebNetAutomation extends OpenWebNet
+{
+    /**
+     * @param string $automationAddress either a whole area or an individual automation
+     * @return array<int,int>|int|null returns null if unknown status, int otherwise or an array if area was passed in address
+     * @throws OpenWebNetException
+     */
+    public function getAutomationStatus(string $automationAddress): array|int|null
+    {
 
-	public function __destruct()
-	{
-		parent::__destruct();
-	}
+        $reply = $this->sendRaw('*#2*' . $automationAddress . '##', 1024, true);
 
-	/**
-	 * @param int $automation_id
-	 * @return int|null returns null if unknown status, int otherwise
-	 * @throws OpenWebNetException
-	 */
-	public function GetAutomationStatus($automation_id){
-
-		$reply = $this->SendRaw('*#2*'.$automation_id.'##', 1024, true);
-
-		return $this->ParseStatusReply($automation_id, 2, $reply);
-
-	}
+        return $this->parseStatusReply($automationAddress, 2, $reply);
+    }
 
 
-	/**
-	 * @param int $automation_id
-	 * @param int $status 0 - stop, 1 - up, 2 - down
-	 * @return bool
-	 * @throws OpenWebNetException
-	 */
-	public function SetBasicActuator($automation_id, $status){
+    /**
+     * @param int $status 0 - stop, 1 - up, 2 - down
+     * @throws OpenWebNetException
+     */
+    public function setBasicActuator(string $automationId, int $status): bool
+    {
 
-		$current_status = $this->GetAutomationStatus($automation_id);
+        $currentStatus = $this->getAutomationStatus($automationId);
 
-		if($current_status != 0){
-			$this->SendRaw('*2*0*'.$automation_id.'##');
-		}
+        if ($currentStatus != 0) {
+            $this->sendRaw('*2*0*' . $automationId . '##');
+        }
 
-		$reply = $this->SendRaw('*2*'.$status.'*'.$automation_id.'##');
+        $reply = $this->sendRaw('*2*' . $status . '*' . $automationId . '##');
 
-		if($reply == OpenWebNetConstants::ACK){
-			return true;
-		}else{
-			return false;
-		}
-
-	}
-
-
+        if ($reply == OpenWebNetConstants::ACK) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }

@@ -1,0 +1,31 @@
+{
+  "name": "michnovka/openwebnet-php",
+  "description": "A PHP library to allow Bticino OpenWebNet protocol control",
+  "type": "library",
+  "license": "GPL-3.0-or-later",
+  "authors": [
+    {
+      "name": "michnovka",
+      "homepage": "https://github.com/michnovka/openwebnet-php"
+    }
+  ],
+  "require": {
+    "php": ">=8.2"
+  },
+  "require-dev": {
+    "phpcsstandards/php_codesniffer": "^3.10",
+    "wp-coding-standards/wpcs": "^3",
+    "slevomat/coding-standard": "^8.14",
+    "vimeo/psalm": "^5.25"
+  },
+  "autoload": {
+    "psr-4": {
+      "Michnovka\\OpenWebNet\\": "src/"
+    }
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    }
+  }
+}

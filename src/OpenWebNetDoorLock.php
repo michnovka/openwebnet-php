@@ -1,38 +1,26 @@
 <?php
 
-require_once dirname(__FILE__).'/OpenWebNet.php';
+declare(strict_types=1);
 
-class OpenWebNetDoorLock extends OpenWebNet{
+namespace Michnovka\OpenWebNet;
 
-	public function __construct($ip, $port = 20000, $password = '12345', $debugging_level = OpenWebNetDebuggingLevel::NONE)
-	{
-		parent::__construct($ip, $port, $password, $debugging_level);
-	}
+class OpenWebNetDoorLock extends OpenWebNet
+{
+    /**
+     * @throws OpenWebNetException
+     */
+    public function openDoor(int $doorId): bool
+    {
+        $doorId += 4000;
 
-	public function __destruct()
-	{
-		parent::__destruct();
-	}
+        $message = '*6*10*' . $doorId . '##';
 
-	/**
-	 * @param int $door_id
-	 * @return bool
-	 * @throws OpenWebNetException
-	 */
-	public function OpenDoor($door_id){
+        $reply = $this->sendRaw($message);
 
-		$door_id += 4000;
-
-		$message = '*6*10*'.$door_id.'##';
-
-		$reply = $this->SendRaw($message);
-
-		if($reply == OpenWebNetConstants::ACK){
-			return true;
-		}else{
-			return false;
-		}
-	}
-
-
+        if ($reply == OpenWebNetConstants::ACK) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }

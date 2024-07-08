@@ -6,3 +6,5 @@
 *.idea/*
 vendor/*
 tests_private/*
+var/*
+.phpcs-cache

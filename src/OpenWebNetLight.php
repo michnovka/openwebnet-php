@@ -1,124 +1,113 @@
 <?php
 
-require_once dirname(__FILE__).'/OpenWebNet.php';
+declare(strict_types=1);
 
-class OpenWebNetLight extends OpenWebNet{
+namespace Michnovka\OpenWebNet;
 
-	public function __construct($ip, $port = 20000, $password = '12345', $debugging_level = OpenWebNetDebuggingLevel::NONE)
-	{
-		parent::__construct($ip, $port, $password, $debugging_level);
-	}
+class OpenWebNetLight extends OpenWebNet
+{
+    /**
+     * @param string $lightAddress either a whole are or an individual light
+     * @return array<int,int>|int|null returns null if unknown status, int otherwise or an array if area was passed in address
+     * @throws OpenWebNetException
+     */
+    public function getLightStatus(string $lightAddress): int|array|null
+    {
 
-	public function __destruct()
-	{
-		parent::__destruct();
-	}
+        $reply = $this->sendRaw('*#1*' . $lightAddress . '##', 1024, true);
 
-	/**
-	 * @param int $light_id
-	 * @return int|null returns null if unknown status, int otherwise
-	 * @throws OpenWebNetException
-	 */
-	public function GetLightStatus($light_id){
+        return $this->parseStatusReply($lightAddress, 1, $reply);
+    }
 
-		$reply = $this->SendRaw('*#1*'.$light_id.'##', 1024, true);
+    /**
+     * @throws OpenWebNetException
+     */
+    public function setLight(string $lightId, bool $status): bool
+    {
+        $reply = $this->sendRaw('*1*' . ($status ? '1' : '0') . '*' . $lightId . '##');
 
-		return $this->ParseStatusReply($light_id, 1, $reply);
+        if ($reply == OpenWebNetConstants::ACK) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
-	}
+    /**
+     * @throws OpenWebNetException
+     */
+    public function setLightTimedON(string $lightId, float|int $seconds): bool
+    {
+        if($seconds == 0.5){
+            $command = 18;
+        }else{
+            $command = match ((int) $seconds) {
+                60 => 11,
+                120 => 12,
+                180 => 13,
+                240 => 14,
+                300 => 15,
+                900 => 16,
+                1800 => 17,
+                default => throw new OpenWebNetException("Time interval not supported: $seconds", OpenWebNetException::CODE_TIME_NOT_SUPPORTED),
+            };
+        }
 
+        $reply = $this->sendRaw('*1*' . $command . '*' . $lightId . '##');
 
-	/**
-	 * @param int $light_id
-	 * @param bool $status
-	 * @return bool
-	 * @throws OpenWebNetException
-	 */
-	public function SetLight($light_id, $status){
-
-		$status = $status ? '1' : '0';
-
-		$reply = $this->SendRaw('*1*'.$status.'*'.$light_id.'##');
-
-		if($reply == OpenWebNetConstants::ACK){
-			return true;
-		}else{
-			return false;
-		}
-
-	}
-
-	/**
-	 * @param int $light_id
-	 * @param float $seconds
-	 * @return bool
-	 * @throws OpenWebNetException
-	 */
-	public function SetLightTimedON($light_id, $seconds){
-
-		$allowed_seconds = [0.5 => 18, 60 => 11, 120 => 12, 180 => 13, 240 => 14, 300 => 15, 900 => 16, 1800 => 17];
-
-		if(!array_key_exists($seconds, $allowed_seconds)){
-			throw new OpenWebNetException("Time interval not supported: $seconds", OpenWebNetException::CODE_TIME_NOT_SUPPORTED);
-		}
-
-		$reply = $this->SendRaw('*1*'.$allowed_seconds[$seconds].'*'.$light_id.'##');
-
-		if($reply == OpenWebNetConstants::ACK){
-			return true;
-		}else{
-			return false;
-		}
-
-	}
+        if ($reply == OpenWebNetConstants::ACK) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
 
-	/**
-	 * @param int $light_id
-	 * @param float $seconds
-	 * @return bool
-	 * @throws OpenWebNetException
-	 */
-	public function SetLightBlinking($light_id, $seconds){
+    /**
+     * @throws OpenWebNetException
+     */
+    public function setLightBlinking(string $lightId, float $seconds): bool
+    {
+        $command = match ($seconds) {
+            0.5 => 20,
+            1.0 => 21,
+            1.5 => 22,
+            2.0 => 23,
+            2.5 => 24,
+            3.0 => 25,
+            4.0 => 27,
+            4.5 => 28,
+            5.0 => 29,
+            default => throw new OpenWebNetException("Time interval not supported: $seconds", OpenWebNetException::CODE_TIME_NOT_SUPPORTED),
+        };
 
-		$allowed_seconds = [0.5 => 20, 1 => 21, 1.5 => 22, 2 => 23, 2.5 => 24, 3 => 25, 3.5 => 26, 4 => 27, 4.5 => 28, 5 => 29];
+        $reply = $this->sendRaw('*1*' .$command . '*' . $lightId . '##');
 
-		if(!array_key_exists($seconds, $allowed_seconds)){
-			throw new OpenWebNetException("Time interval not supported: $seconds", OpenWebNetException::CODE_TIME_NOT_SUPPORTED);
-		}
+        if ($reply == OpenWebNetConstants::ACK) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
-		$reply = $this->SendRaw('*1*'.$allowed_seconds[$seconds].'*'.$light_id.'##');
+    /**
+     * @throws OpenWebNetException
+     */
+    public function setLightDimmerLevel(string $lightId, int $dimmerLevel): bool
+    {
 
-		if($reply == OpenWebNetConstants::ACK){
-			return true;
-		}else{
-			return false;
-		}
+        $allowedLevels = [0 => 0, 20 => 2, 30 => 3, 40 => 4, 50 => 5, 60 => 6, 70 => 7, 80 => 8, 90 => 9, 100 => 10];
 
-	}
+        if (!array_key_exists($dimmerLevel, $allowedLevels)) {
+            throw new OpenWebNetException("Dimmer level not supported: $dimmerLevel", OpenWebNetException::CODE_DIMMER_LEVEL_NOT_SUPPORTED);
+        }
 
-	/**
-	 * @param int $light_id
-	 * @param int $dimmer_level
-	 * @return bool
-	 * @throws OpenWebNetException
-	 */
-	public function SetLightDimmerLevel($light_id, $dimmer_level){
+        $reply = $this->sendRaw('*1*' . $allowedLevels[$dimmerLevel] . '*' . $lightId . '##');
 
-		$allowed_levels = [0 => 0, 20 => 2, 30 => 3, 40 => 4, 50 => 5, 60 => 6, 70 => 7, 80 => 8, 90 => 9, 100 => 10];
-
-		if(!array_key_exists($dimmer_level, $allowed_levels)){
-			throw new OpenWebNetException("Dimmer level not supported: $dimmer_level", OpenWebNetException::CODE_DIMMER_LEVEL_NOT_SUPPORTED);
-		}
-
-		$reply = $this->SendRaw('*1*'.$allowed_levels[$dimmer_level].'*'.$light_id.'##');
-
-		if($reply == OpenWebNetConstants::ACK){
-			return true;
-		}else{
-			return false;
-		}
-
-	}
-
+        if ($reply == OpenWebNetConstants::ACK) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }

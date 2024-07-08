@@ -1,30 +1,34 @@
 <?php
 
-require_once dirname(__FILE__).'/../src/OpenWebNet.php';
+require dirname(__FILE__).'/../vendor/autoload.php';
 
-$own = new OpenWebNetLight('192.168.1.40', 20000, '12345', OpenWebNetDebuggingLevel::VERBOSE);
+use Michnovka\OpenWebNet\OpenWebNet;
+use Michnovka\OpenWebNet\OpenWebNetDebuggingLevel;
+use Michnovka\OpenWebNet\OpenWebNetLocations;
 
-$own_light = $own->GetLightInstance();
+$own = new OpenWebNet('192.168.1.40', 20000, '12345', OpenWebNetDebuggingLevel::VERBOSE);
+
+$own_light = $own->getLightInstance();
 
 // Turn light 1.2 ON
-$own_light->SetLight(OpenWebNetLocations::Address(1, 2), 0);
+$own_light->setLight(OpenWebNetLocations::address(1, 2), 0);
 
 // 0
-var_dump($own_light->GetLightStatus(OpenWebNetLocations::Address(1, 2)));
+var_dump($own_light->getLightStatus(OpenWebNetLocations::address(1, 2)));
 
 // Turn ON all lights in area 3 for 1 minute
-$own_light->SetLightTimedON(OpenWebNetLocations::Address(3, null), 60);
+$own_light->setLightTimedON(OpenWebNetLocations::address(3, null), 60);
 
 // Array of statuses
-var_dump($own_light->GetLightStatus('31'));
+var_dump($own_light->getLightStatus('31'));
 
 
 // Blink
-$own_light->SetLightBlinking('31', 1);
+$own_light->setLightBlinking('31', 1);
 // 22
-var_dump($own_light->GetLightStatus('31'));
+var_dump($own_light->getLightStatus('31'));
 
 // Dimmer
-$own_light->SetLightDimmerLevel('12', 20);
+$own_light->setLightDimmerLevel('12', 20);
 // 2
-var_dump($own_light->GetLightStatus('12'));
+var_dump($own_light->getLightStatus('12'));
