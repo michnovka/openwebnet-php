@@ -72,7 +72,6 @@ class OpenWebNet
             $this->connect();
                 $this->module_instance_automation = new OpenWebNetAutomation($this->ip, $this->port, $this->password, $this->debuggingLevel);
                 $this->module_instance_automation->setSocket($this->socket);
-
         }
 
         return $this->module_instance_automation;
@@ -88,7 +87,6 @@ class OpenWebNet
             $this->connect();
                 $this->module_instance_scenario = new OpenWebNetScenario($this->ip, $this->port, $this->password, $this->debuggingLevel);
                 $this->module_instance_scenario->setSocket($this->socket);
-
         }
 
         return $this->module_instance_scenario;
@@ -103,7 +101,6 @@ class OpenWebNet
             $this->connect();
                 $this->module_instance_temperature = new OpenWebNetTemperature($this->ip, $this->port, $this->password, $this->debuggingLevel);
                 $this->module_instance_temperature->setSocket($this->socket);
-
         }
 
         return $this->module_instance_temperature;
@@ -118,10 +115,17 @@ class OpenWebNet
             $this->connect();
                 $this->module_instance_door_lock = new OpenWebNetDoorLock($this->ip, $this->port, $this->password, $this->debuggingLevel);
                 $this->module_instance_door_lock->setSocket($this->socket);
-
         }
 
         return $this->module_instance_door_lock;
+    }
+
+    /**
+     * Check if the socket is active
+     */
+    public function isSocketActive(): bool
+    {
+        return isset($this->socket);
     }
 
     /**
@@ -139,13 +143,6 @@ class OpenWebNet
         OpenWebNetDebugging::logTime("Closing connection to " . $this->ip . ":" . $this->port, OpenWebNetDebuggingLevel::NORMAL);
         socket_close($this->socket);
         unset($this->socket);
-    }
-
-    /**
-     * Check if the socket is active
-     */
-    public function isSocketActive(): bool {
-        return isset($this->socket);
     }
 
     /**
@@ -168,15 +165,15 @@ class OpenWebNet
             $errorNumber = socket_last_error();
             $errorMessage = socket_strerror($errorNumber);
             throw new OpenWebNetException("Error connecting to server: [$errorNumber] - $errorMessage", OpenWebNetException::CODE_CANNOT_CONNECT);
-        }else{
+        } else {
             $this->socket = $socket;
         }
 
-        $connect_result = socket_connect($this->socket, $this->ip, $this->port);
+        $connectResult = socket_connect($this->socket, $this->ip, $this->port);
 
         OpenWebNetDebugging::logTime("Connected", OpenWebNetDebuggingLevel::VERBOSE);
 
-        if ($connect_result === false) {
+        if ($connectResult === false) {
             $errorNumber = socket_last_error($this->socket);
             $errorMessage = socket_strerror($errorNumber);
 

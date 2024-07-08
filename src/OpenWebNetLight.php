@@ -38,9 +38,9 @@ class OpenWebNetLight extends OpenWebNet
      */
     public function setLightTimedON(string $lightId, float|int $seconds): bool
     {
-        if($seconds == 0.5){
+        if ($seconds == 0.5) {
             $command = 18;
-        }else{
+        } else {
             $command = match ((int) $seconds) {
                 60 => 11,
                 120 => 12,
@@ -81,7 +81,7 @@ class OpenWebNetLight extends OpenWebNet
             default => throw new OpenWebNetException("Time interval not supported: $seconds", OpenWebNetException::CODE_TIME_NOT_SUPPORTED),
         };
 
-        $reply = $this->sendRaw('*1*' .$command . '*' . $lightId . '##');
+        $reply = $this->sendRaw('*1*' . $command . '*' . $lightId . '##');
 
         if ($reply == OpenWebNetConstants::ACK) {
             return true;
